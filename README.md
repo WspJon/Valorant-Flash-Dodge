@@ -33,8 +33,8 @@ npm run preview
 ## Phase 1 manual test
 
 1. Enter the room: the menu disappears and the mouse is captured.
-2. Move the mouse left/right and up/down: the camera rotates smoothly, without
-   rolling or flipping past straight up/down. The crosshair stays centered.
+2. Move the mouse left/right: the camera turns smoothly. Move up/down: the
+   camera stays level at eye height. The crosshair stays centered.
 3. Look around the room: walls, corners, crates, and target boards render.
    Your position stays fixed; walking and shooting are outside Phase 1.
 4. Press Escape: the cursor is released and the pause menu appears. Moving the

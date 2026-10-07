@@ -71,10 +71,12 @@ function initialize() {
       : 'FLASH ACTIVATED';
   }
 
-  // PointerLockControls handles yaw/pitch and clamps the vertical look angle.
+  // Equal polar limits hold the camera level; mouse input changes only yaw.
   // The player stays at a fixed position; mouse look is independent of flashes.
   const controls = new PointerLockControls(camera, renderer.domElement);
   controls.pointerSpeed = 0.8;
+  controls.minPolarAngle = Math.PI / 2;
+  controls.maxPolarAngle = Math.PI / 2;
 
   function enterRoom() {
     if (controls.isLocked) return;
