@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // Prototype timings in seconds; these can be tuned without changing the camera.
-export const PHOENIX_SETTINGS = Object.freeze({ activationDelay: 1.1, burstDuration: 0.3 });
+export const PHOENIX_SETTINGS = Object.freeze({ activationDelay: 0.5, burstDuration: 0.3 });
 
 export function createPhoenixPath(side) {
   // Start behind a side partition, round its inner corner, then enter the lane.

@@ -160,8 +160,6 @@ function initialize() {
       if (flash.phase === 'ready' && effectOpacity(effectResult, effectTime) > 0) state.textContent = 'RECOVERING';
       else if (flash.phase === 'ready') {
         if (!scheduler.waiting) {
-          // Recenter after recovery so every new attempt has a fair starting view.
-          camera.rotation.set(0, 0, 0);
           scheduler.schedule();
         } else if (scheduler.update(delta)) flash.launch();
         if (flash.phase === 'ready') showFlashState();

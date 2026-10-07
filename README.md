@@ -63,7 +63,7 @@ npm run preview
 
 1. Enter and face the target boards. Press Space: a glowing orange projectile
    rounds either side partition and curves into the lane.
-2. It bursts after 1.1 seconds of active simulation time, fades, and returns
+2. It bursts after 0.5 seconds of active simulation time, fades, and returns
    to READY after any screen effect recovers.
 3. Press Space again several times after READY. Both left and right directions
    should eventually appear; selection is random and can repeat.
@@ -114,7 +114,7 @@ test reaction responsiveness on your desktop before proceeding to Phase 4.
 
 Phase 4: all eight automated tests and the production build passed. A Chromium
 check with controlled frame timing verified automatic repetition, stats,
-pause/reset, manual skip, successful reaction aggregates, and camera recentering
+pause/reset, manual skip, successful reaction aggregates, and continuous camera orientation
 without JavaScript errors. Manual desktop validation is still required below.
 
 ## Phase 4 manual test
@@ -126,8 +126,9 @@ without JavaScript errors. Manual desktop validation is still required below.
 3. See the cue and turn fully away: dodges and success increase, and a valid
    reaction updates best/average. These averages include only valid successful
    dodges; the HUD shows their sample count. Dodges with no cue have no sample.
-4. After the burst/effect finishes, the camera recenters before the next random
-   wait. Space skips the wait, without creating duplicate attempts.
+4. After the burst/effect finishes, the next random wait begins. Your camera
+   keeps its orientation through activation, recovery, and subsequent attempts.
+   Space skips the wait, without creating duplicate attempts.
 5. Escape freezes the loop and effects. Resume continues. Pausing during flight
    makes that attempt practice only: neither its outcome nor timing affects stats.
 6. In the pause menu, Reset session stats clears the attempt, screen effect,
