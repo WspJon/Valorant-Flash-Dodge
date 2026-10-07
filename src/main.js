@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { createRoom } from './room.js';
+import { PhoenixFlash } from './phoenix-flash.js';
 import './style.css';
 
 const game = document.querySelector('#game');
@@ -21,8 +22,19 @@ function initialize() {
   camera.position.set(0, 1.7, 4);
   createRoom(scene);
 
+  const flash = new PhoenixFlash(scene, (phase, side) => {
+    const direction = side === -1 ? 'LEFT' : 'RIGHT';
+    state.textContent = phase === 'flying' ? `CURVEBALL / ${direction}`
+      : phase === 'burst' ? 'FLASH ACTIVATED' : 'READY / SPACE TO THROW';
+  });
+  function showFlashState() {
+    state.textContent = flash.phase === 'ready' ? 'READY / SPACE TO THROW'
+      : flash.phase === 'flying' ? `CURVEBALL / ${flash.side === -1 ? 'LEFT' : 'RIGHT'}`
+      : 'FLASH ACTIVATED';
+  }
+
   // PointerLockControls handles yaw/pitch and clamps the vertical look angle.
-  // The player stays at a fixed position in Phase 1; only mouse look is needed.
+  // The player stays at a fixed position; mouse look is independent of flashes.
   const controls = new PointerLockControls(camera, renderer.domElement);
   controls.pointerSpeed = 0.8;
 
@@ -45,7 +57,7 @@ function initialize() {
   renderer.domElement.addEventListener('click', enterRoom);
   controls.addEventListener('lock', () => {
     menu.hidden = true;
-    state.textContent = 'LOOK AROUND';
+    showFlashState();
   });
   controls.addEventListener('unlock', () => {
     menu.hidden = false;
@@ -55,6 +67,14 @@ function initialize() {
     button.focus();
   });
   document.addEventListener('pointerlockerror', showLockError);
+  document.addEventListener('keydown', (event) => {
+    if (event.code !== 'Space' || !controls.isLocked) return;
+    event.preventDefault();
+    if (!event.repeat) flash.launch();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && controls.isLocked) controls.unlock();
+  });
 
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -67,7 +87,14 @@ function initialize() {
     controls.unlock();
     status.textContent = 'Graphics context lost. Reload the page to restart the room.';
   });
-  renderer.setAnimationLoop(() => renderer.render(scene, camera));
+  let previousTime = performance.now();
+  renderer.setAnimationLoop((time) => {
+    // Discard paused time and long stalls so resuming never skips the projectile.
+    const delta = Math.min(Math.max((time - previousTime) / 1000, 0), 0.05);
+    previousTime = time;
+    if (controls.isLocked) flash.update(delta);
+    renderer.render(scene, camera);
+  });
 }
 
 if (!('pointerLockElement' in document)) {
