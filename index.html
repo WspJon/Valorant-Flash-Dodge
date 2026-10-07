@@ -3,25 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Valorant Flash Dodge Trainer — Phase 3</title>
+    <title>Valorant Flash Dodge Trainer — Phase 4</title>
   </head>
   <body>
     <main id="game" aria-label="First-person training room">
       <div id="screen-flash" aria-hidden="true"></div>
-      <div class="hud"><span class="brand">FLASH DODGE <b>TRAINER</b></span><span>PHASE 03 / DODGE DETECTION</span></div>
+      <div class="hud"><span class="brand">FLASH DODGE <b>TRAINER</b></span><span>PHASE 04 / TRAINING LOOP</span></div>
+      <div class="stats" aria-label="Session statistics">
+        <div>ATTEMPTS<strong id="attempts">0</strong></div><div>DODGES<strong id="dodges">0</strong></div>
+        <div>SUCCESS<strong id="success">0%</strong></div><div>BEST<strong id="best">—</strong></div>
+        <div>AVERAGE<strong id="average">—</strong></div><div>REACTION SAMPLES<strong id="samples">0</strong></div>
+      </div>
       <div class="results" role="status"><div id="result">Ready to practice</div><div id="reaction">Reaction: —</div></div>
       <div id="crosshair" aria-hidden="true"></div>
       <section id="menu" aria-labelledby="menu-title">
         <div class="panel">
           <p class="eyebrow">TRAINING RANGE / 01</p>
           <h1 id="menu-title">See it. Turn away.</h1>
-          <p>Face the targets and press Space. Turn away when the curveball appears, before it bursts. Looking toward it produces a bright screen flash. Your angle at activation determines the result.</p>
+          <p>Flashes arrive automatically from either side after a random delay. Turn away when you see the projectile. After recovery, the camera recenters for the next attempt. Paused or delayed attempts are practice only.</p>
           <button id="enter" type="button">Enter training room <span>→</span></button>
-          <p class="controls">MOUSE · LOOK AROUND <br /> SPACE · THROW CURVEBALL <br /> ESC · PAUSE / RELEASE MOUSE</p>
+          <p class="controls">MOUSE · LOOK AROUND <br /> SPACE · SKIP WAIT / THROW <br /> ESC · PAUSE / RELEASE MOUSE</p>
+          <button id="reset" class="secondary" type="button">Reset session stats <span>↺</span></button>
           <p id="status" role="status" aria-live="polite">Click to capture your mouse.</p>
         </div>
       </section>
-      <div class="footer"><span id="state">PAUSED</span><span>Space to throw · Mouse to look · Esc to pause</span></div>
+      <div class="footer"><span id="state">PAUSED</span><span>Automatic attempts · Space to skip wait · Esc to pause</span></div>
     </main>
     <script type="module" src="/src/main.js"></script>
   </body>

@@ -3,6 +3,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { createRoom } from './room.js';
 import { PhoenixFlash, PHOENIX_SETTINGS } from './phoenix-flash.js';
 import { classifyAngle, inspectFlash, ReactionTracker, effectOpacity } from './flash-detection.js';
+import { SessionStats, AttemptScheduler } from './training-session.js';
 import './style.css';
 
 const game = document.querySelector('#game');
@@ -26,6 +27,16 @@ function initialize() {
   camera.position.set(0, 1.7, 4);
   const obstacles = createRoom(scene);
   const reaction = new ReactionTracker();
+  const stats = new SessionStats();
+  const scheduler = new AttemptScheduler();
+  function renderStats() {
+    document.querySelector('#attempts').textContent = stats.attempts;
+    document.querySelector('#dodges').textContent = stats.dodges;
+    document.querySelector('#success').textContent = `${stats.successRate.toFixed(0)}%`;
+    document.querySelector('#best').textContent = stats.best === null ? '—' : `${Math.round(stats.best)} ms`;
+    document.querySelector('#average').textContent = stats.average === null ? '—' : `${Math.round(stats.average)} ms`;
+    document.querySelector('#samples').textContent = stats.reactionCount;
+  }
   let effectResult = null;
   let effectTime = 0;
   let previousTime = performance.now();
@@ -35,6 +46,7 @@ function initialize() {
     state.textContent = phase === 'flying' ? `CURVEBALL / ${direction}`
       : phase === 'burst' ? 'FLASH ACTIVATED' : 'READY / SPACE TO THROW';
     if (phase === 'flying') {
+      scheduler.launchNow();
       reaction.reset();
       resultLabel.textContent = 'Watch for the projectile';
       reactionLabel.textContent = 'Reaction: waiting for visible cue';
@@ -47,11 +59,14 @@ function initialize() {
       effectTime = 0;
       resultLabel.textContent = `${effectResult} · ${observation.angle.toFixed(1)}°${observation.blocked ? ' · blocked by wall' : ''}`;
       reactionLabel.textContent = reaction.describe();
+      const counted = stats.record(effectResult, reaction);
+      if (!counted) resultLabel.textContent += ' · practice only';
+      renderStats();
       screenFlash.style.opacity = effectOpacity(effectResult, effectTime);
     }
   });
   function showFlashState() {
-    state.textContent = flash.phase === 'ready' ? 'READY / SPACE TO THROW'
+    state.textContent = flash.phase === 'ready' ? scheduler.waiting ? 'GET READY / FACE THE TARGETS' : 'RECOVERING'
       : flash.phase === 'flying' ? `CURVEBALL / ${flash.side === -1 ? 'LEFT' : 'RIGHT'}`
       : 'FLASH ACTIVATED';
   }
@@ -97,6 +112,20 @@ function initialize() {
     event.preventDefault();
     if (!event.repeat && effectOpacity(effectResult, effectTime) === 0) flash.launch();
   });
+  document.querySelector('#reset').addEventListener('click', () => {
+    flash.reset();
+    reaction.reset();
+    stats.reset();
+    scheduler.schedule();
+    camera.rotation.set(0, 0, 0);
+    effectResult = null;
+    effectTime = 0;
+    screenFlash.style.opacity = 0;
+    resultLabel.textContent = 'Session reset';
+    reactionLabel.textContent = 'Reaction: —';
+    renderStats();
+    status.textContent = 'Session reset. Click to start.';
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && controls.isLocked) controls.unlock();
   });
@@ -129,7 +158,14 @@ function initialize() {
           : reaction.reactionMs === null ? 'Reaction: turn away now' : reaction.describe();
       }
       if (flash.phase === 'ready' && effectOpacity(effectResult, effectTime) > 0) state.textContent = 'RECOVERING';
-      else if (flash.phase === 'ready') showFlashState();
+      else if (flash.phase === 'ready') {
+        if (!scheduler.waiting) {
+          // Recenter after recovery so every new attempt has a fair starting view.
+          camera.rotation.set(0, 0, 0);
+          scheduler.schedule();
+        } else if (scheduler.update(delta)) flash.launch();
+        if (flash.phase === 'ready') showFlashState();
+      }
     }
     renderer.render(scene, camera);
   });

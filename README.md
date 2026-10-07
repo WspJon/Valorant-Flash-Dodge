@@ -1,9 +1,10 @@
 # Valorant Flash Dodge Trainer
 
-Phase 3: a browser-based first-person training room with a Phoenix-style
-curveball, angle-based dodge detection, screen effects, and reaction timing.
+Phase 4: a browser-based first-person training room with a Phoenix-style
+curveball, angle-based dodge detection, screen effects, reaction timing,
+automatic attempts, and session statistics.
 Built with HTML, CSS, JavaScript, and Three.js. All geometry and effects are
-original and procedural. Aggregate statistics and automatic attempts come later.
+original and procedural.
 
 ## Run
 
@@ -53,6 +54,7 @@ npm run preview
 - `src/room.js`: procedural room geometry and lighting.
 - `src/flash-detection.js`: visibility, angle classification, reaction tracking,
   and configurable detection/effect settings. Run `npm test` for its tests.
+- `src/training-session.js`: random wait scheduling and session statistics.
 - `src/phoenix-flash.js`: configurable timings, curved trajectory, glowing
   projectile, and activation burst. The exported class keeps flash behavior
   separate from camera controls.
@@ -70,7 +72,7 @@ npm run preview
    it paused. Space while paused must not launch a projectile.
 6. Check mouse look, Escape/resume, and resize still work as in Phase 1.
 
-There is no automatic launch loop yet. Timings are in `PHOENIX_SETTINGS`.
+Projectile timings are in `PHOENIX_SETTINGS`.
 
 ## Phase 3 manual test
 
@@ -109,3 +111,27 @@ Chromium integration checks passed for full/partial/dodged outcomes, turning
 back before activation, effect recovery, and paused score exclusion, without
 JavaScript errors. Software rendering can trigger the frame-delay exclusion;
 test reaction responsiveness on your desktop before proceeding to Phase 4.
+
+Phase 4: all eight automated tests and the production build passed. A Chromium
+check with controlled frame timing verified automatic repetition, stats,
+pause/reset, manual skip, successful reaction aggregates, and camera recentering
+without JavaScript errors. Manual desktop validation is still required below.
+
+## Phase 4 manual test
+
+1. Enter and wait: attempts launch automatically after a random 1.5–3.5 second
+   delay, from randomly selected left/right corners.
+2. Do nothing for two attempts: attempts increase once per activation and
+   success stays at 0%. Partial flashes count as failures too.
+3. See the cue and turn fully away: dodges and success increase, and a valid
+   reaction updates best/average. These averages include only valid successful
+   dodges; the HUD shows their sample count. Dodges with no cue have no sample.
+4. After the burst/effect finishes, the camera recenters before the next random
+   wait. Space skips the wait, without creating duplicate attempts.
+5. Escape freezes the loop and effects. Resume continues. Pausing during flight
+   makes that attempt practice only: neither its outcome nor timing affects stats.
+6. In the pause menu, Reset session stats clears the attempt, screen effect,
+   counters, and camera direction. Click Resume to begin a fresh random wait.
+
+Stats are session-only and reset on page reload. Frame-stalled attempts are
+practice only. Wait bounds are configurable in `TRAINING_SETTINGS`.

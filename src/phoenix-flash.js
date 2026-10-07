@@ -60,6 +60,12 @@ export class PhoenixFlash {
     this.onStateChange('flying', this.side);
   }
 
+  reset() {
+    this.phase = 'ready';
+    this.elapsed = 0;
+    this.group.visible = false;
+  }
+
   update(delta) {
     if (this.phase === 'ready') return;
     this.elapsed += delta;
