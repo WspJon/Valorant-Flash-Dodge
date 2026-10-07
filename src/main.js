@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { createRoom } from './room.js';
-import { PhoenixFlash } from './phoenix-flash.js';
+import { PhoenixFlash, PHOENIX_SETTINGS } from './phoenix-flash.js';
+import { classifyAngle, inspectFlash, ReactionTracker, effectOpacity } from './flash-detection.js';
 import './style.css';
 
 const game = document.querySelector('#game');
@@ -9,6 +10,9 @@ const menu = document.querySelector('#menu');
 const button = document.querySelector('#enter');
 const status = document.querySelector('#status');
 const state = document.querySelector('#state');
+const resultLabel = document.querySelector('#result');
+const reactionLabel = document.querySelector('#reaction');
+const screenFlash = document.querySelector('#screen-flash');
 
 function initialize() {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -20,12 +24,31 @@ function initialize() {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.set(0, 1.7, 4);
-  createRoom(scene);
+  const obstacles = createRoom(scene);
+  const reaction = new ReactionTracker();
+  let effectResult = null;
+  let effectTime = 0;
+  let previousTime = performance.now();
 
   const flash = new PhoenixFlash(scene, (phase, side) => {
     const direction = side === -1 ? 'LEFT' : 'RIGHT';
     state.textContent = phase === 'flying' ? `CURVEBALL / ${direction}`
       : phase === 'burst' ? 'FLASH ACTIVATED' : 'READY / SPACE TO THROW';
+    if (phase === 'flying') {
+      reaction.reset();
+      resultLabel.textContent = 'Watch for the projectile';
+      reactionLabel.textContent = 'Reaction: waiting for visible cue';
+    }
+    if (phase === 'burst') {
+      const observation = inspectFlash(camera, flash.group.position, obstacles);
+      // A projectile first seen on activation offers no pre-activation reaction cue.
+      if (reaction.cueTime !== null) reaction.sample(PHOENIX_SETTINGS.activationDelay, observation);
+      effectResult = observation.blocked ? 'DODGED' : classifyAngle(observation.angle);
+      effectTime = 0;
+      resultLabel.textContent = `${effectResult} · ${observation.angle.toFixed(1)}°${observation.blocked ? ' · blocked by wall' : ''}`;
+      reactionLabel.textContent = reaction.describe();
+      screenFlash.style.opacity = effectOpacity(effectResult, effectTime);
+    }
   });
   function showFlashState() {
     state.textContent = flash.phase === 'ready' ? 'READY / SPACE TO THROW'
@@ -56,10 +79,12 @@ function initialize() {
   });
   renderer.domElement.addEventListener('click', enterRoom);
   controls.addEventListener('lock', () => {
+    previousTime = performance.now();
     menu.hidden = true;
     showFlashState();
   });
   controls.addEventListener('unlock', () => {
+    if (flash.phase === 'flying') reaction.invalidReason = 'attempt paused';
     menu.hidden = false;
     button.innerHTML = 'Resume training room <span>→</span>';
     status.textContent = 'Mouse released. Click to resume.';
@@ -70,7 +95,7 @@ function initialize() {
   document.addEventListener('keydown', (event) => {
     if (event.code !== 'Space' || !controls.isLocked) return;
     event.preventDefault();
-    if (!event.repeat) flash.launch();
+    if (!event.repeat && effectOpacity(effectResult, effectTime) === 0) flash.launch();
   });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && controls.isLocked) controls.unlock();
@@ -87,12 +112,25 @@ function initialize() {
     controls.unlock();
     status.textContent = 'Graphics context lost. Reload the page to restart the room.';
   });
-  let previousTime = performance.now();
   renderer.setAnimationLoop((time) => {
-    // Discard paused time and long stalls so resuming never skips the projectile.
-    const delta = Math.min(Math.max((time - previousTime) / 1000, 0), 0.05);
+    // Real active time keeps reaction measurements independent of frame rate.
+    const delta = Math.max((time - previousTime) / 1000, 0);
     previousTime = time;
-    if (controls.isLocked) flash.update(delta);
+    if (controls.isLocked) {
+      effectTime += delta;
+      screenFlash.style.opacity = effectOpacity(effectResult, effectTime);
+      if (delta > 0.1 && flash.phase === 'flying' && reaction.cueTime !== null) {
+        reaction.invalidReason ??= 'frame delay';
+      }
+      flash.update(delta);
+      if (flash.phase === 'flying') {
+        reaction.sample(flash.elapsed, inspectFlash(camera, flash.group.position, obstacles));
+        reactionLabel.textContent = reaction.cueTime === null ? 'Reaction: waiting for visible cue'
+          : reaction.reactionMs === null ? 'Reaction: turn away now' : reaction.describe();
+      }
+      if (flash.phase === 'ready' && effectOpacity(effectResult, effectTime) > 0) state.textContent = 'RECOVERING';
+      else if (flash.phase === 'ready') showFlashState();
+    }
     renderer.render(scene, camera);
   });
 }

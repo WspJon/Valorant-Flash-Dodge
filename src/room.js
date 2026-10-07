@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 // All geometry is procedural; no game assets are used.
 export function createRoom(scene) {
+  const obstacles = [];
   scene.background = new THREE.Color(0x17232d);
   scene.fog = new THREE.Fog(0x17232d, 18, 42);
   scene.add(new THREE.HemisphereLight(0xc8e4ff, 0x46505a, 2.2));
@@ -20,6 +21,7 @@ export function createRoom(scene) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material);
     mesh.position.set(x, y, z);
     scene.add(mesh);
+    obstacles.push(mesh);
     return mesh;
   }
 
@@ -48,4 +50,6 @@ export function createRoom(scene) {
   for (const x of [-11.7, 11.7]) {
     box(0.08, 0.12, 27, x, 0.2, -5, materials.accent);
   }
+  scene.updateMatrixWorld(true);
+  return obstacles;
 }
